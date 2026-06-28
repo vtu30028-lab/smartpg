@@ -12,13 +12,15 @@ exports.createBooking = async (req, res) => {
   }
 
   try {
-    const [pgs] = await db.query('SELECT rent, rooms FROM pgs WHERE id = ? AND is_active = TRUE', [pg_id]);
+    const [pgs] = await db.query('SELECT rent, rooms, room_pricing FROM pgs WHERE id = ? AND is_active = TRUE', [pg_id]);
     if (pgs.length === 0) {
       return res.status(404).json({ message: 'PG not found or inactive.' });
     }
 
     const pg = pgs[0];
-    const totalAmount = pg.rent * (duration_months || 1);
+    const roomPricing = pg.room_pricing ? (typeof pg.room_pricing === 'string' ? JSON.parse(pg.room_pricing) : pg.room_pricing) : {};
+    const rentAmount = roomPricing[room_type] || pg.rent || 0;
+    const totalAmount = rentAmount * (duration_months || 1);
 
     const [result] = await db.query(
       `INSERT INTO bookings (user_id, pg_id, room_type, move_in_date, duration_months, status, total_amount)
@@ -33,8 +35,9 @@ exports.createBooking = async (req, res) => {
   } catch (error) {
     console.error('Create booking error (demo mode):', error.message);
     const pg = getShowcasePGById(pg_id);
-    const rent = pg?.rent || 6000;
-    const booking = createDemoBooking(req.user, { pg_id, room_type, move_in_date, duration_months }, rent);
+    const roomPricing = pg?.room_pricing || {};
+    const rentAmount = roomPricing[room_type] || pg?.rent || 6000;
+    const booking = createDemoBooking(req.user, { pg_id, room_type, move_in_date, duration_months }, rentAmount);
     res.status(201).json({
       message: 'Booking created successfully.',
       booking: { id: booking.id, total_amount: booking.total_amount, status: booking.status },

@@ -1,11 +1,10 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Home, Search, Sun, Moon, LogOut, User, LayoutDashboard, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { getCurrentUser, logout, isAuthenticated } from '../services/auth';
 
 export default function Navbar() {
-  const location = useLocation();
   const { isDark, toggleTheme } = useTheme();
   const user = getCurrentUser();
   const authenticated = isAuthenticated();

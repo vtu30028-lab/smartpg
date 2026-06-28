@@ -66,7 +66,7 @@ async function initDatabase() {
         longitude DECIMAL(11, 8),
         rent DECIMAL(10, 2) NOT NULL,
         rooms INT DEFAULT 1,
-        room_type ENUM('single', 'double', 'triple', 'shared') DEFAULT 'single',
+        room_pricing JSON,
         gender_preference ENUM('male', 'female', 'any') DEFAULT 'any',
         food_available BOOLEAN DEFAULT FALSE,
         wifi BOOLEAN DEFAULT FALSE,
@@ -170,18 +170,18 @@ async function initDatabase() {
 
 async function seedPGs(conn) {
   const pgs = [
-    [2, 'Sunshine PG for Girls', 'Premium PG with homely food near college.', 'Koramangala, Bangalore', '123 5th Block', 12.9352, 77.6245, 7500, 20, 'double', 'female', 1, 1, 1, 1, 1, 0, '["https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800"]', 1, 4.5, 28],
-    [2, 'Elite Boys Hostel', 'Modern hostel with gym and WiFi.', 'Indiranagar, Bangalore', '456 100 Feet Road', 12.9784, 77.6408, 6500, 30, 'triple', 'male', 1, 1, 0, 0, 1, 1, '["https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800"]', 1, 4.2, 45],
-    [2, 'Comfort Stay PG', 'Budget PG near metro.', 'HSR Layout, Bangalore', '789 Sector 2', 12.9116, 77.6473, 5500, 15, 'shared', 'any', 0, 1, 0, 0, 0, 0, '["https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800"]', 0, 3.8, 12],
-    [2, 'Premium Living Spaces', 'Luxury PG with AC and food.', 'Whitefield, Bangalore', '321 ITPL Road', 12.9698, 77.7500, 12000, 10, 'single', 'any', 1, 1, 1, 1, 1, 1, '["https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800"]', 1, 4.8, 56],
-    [2, 'Student Hub PG', 'Library and mess for students.', 'Jayanagar, Bangalore', '567 4th Block', 12.9308, 77.5838, 6000, 25, 'double', 'any', 1, 1, 0, 1, 1, 0, '["https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800"]', 0, 4.0, 33],
-    [3, 'Campus Connect PG', 'Near RV College with mess.', 'Jayanagar, Bangalore', 'RV College Road', 12.9230, 77.5680, 7800, 22, 'triple', 'any', 1, 1, 0, 1, 1, 0, '["https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800"]', 1, 4.4, 37],
-    [3, 'Silicon Stay PG', 'Near Bellandur tech parks.', 'Bellandur, Bangalore', 'ORR Gate', 12.9250, 77.6762, 9500, 16, 'double', 'any', 1, 1, 1, 1, 1, 1, '["https://images.unsplash.com/photo-1505693416388-ac5ce068fe5?w=800"]', 1, 4.7, 52],
+    [2, 'Sunshine PG for Girls', 'Premium PG with homely food near college.', 'Koramangala, Bangalore', '123 5th Block', 12.9352, 77.6245, 7500, 20, '{"double": 7500}', 'female', 1, 1, 1, 1, 1, 0, '["https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800"]', 1, 4.5, 28],
+    [2, 'Elite Boys Hostel', 'Modern hostel with gym and WiFi.', 'Indiranagar, Bangalore', '456 100 Feet Road', 12.9784, 77.6408, 6500, 30, '{"triple": 6500}', 'male', 1, 1, 0, 0, 1, 1, '["https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800"]', 1, 4.2, 45],
+    [2, 'Comfort Stay PG', 'Budget PG near metro.', 'HSR Layout, Bangalore', '789 Sector 2', 12.9116, 77.6473, 5500, 15, '{"shared": 5500}', 'any', 0, 1, 0, 0, 0, 0, '["https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800"]', 0, 3.8, 12],
+    [2, 'Premium Living Spaces', 'Luxury PG with AC and food.', 'Whitefield, Bangalore', '321 ITPL Road', 12.9698, 77.7500, 12000, 10, '{"single": 12000}', 'any', 1, 1, 1, 1, 1, 1, '["https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800"]', 1, 4.8, 56],
+    [2, 'Student Hub PG', 'Library and mess for students.', 'Jayanagar, Bangalore', '567 4th Block', 12.9308, 77.5838, 6000, 25, '{"double": 6000}', 'any', 1, 1, 0, 1, 1, 0, '["https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800"]', 0, 4.0, 33],
+    [3, 'Campus Connect PG', 'Near RV College with mess.', 'Jayanagar, Bangalore', 'RV College Road', 12.9230, 77.5680, 7800, 22, '{"triple": 7800}', 'any', 1, 1, 0, 1, 1, 0, '["https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800"]', 1, 4.4, 37],
+    [3, 'Silicon Stay PG', 'Near Bellandur tech parks.', 'Bellandur, Bangalore', 'ORR Gate', 12.9250, 77.6762, 9500, 16, '{"double": 9500}', 'any', 1, 1, 1, 1, 1, 1, '["https://images.unsplash.com/photo-1505693416388-ac5ce068fe5?w=800"]', 1, 4.7, 52],
   ];
 
   for (const pg of pgs) {
     await conn.query(
-      `INSERT INTO pgs (owner_id, name, description, location, address, latitude, longitude, rent, rooms, room_type, gender_preference, food_available, wifi, ac, attached_bathroom, laundry, parking, images, is_featured, rating, total_reviews) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO pgs (owner_id, name, description, location, address, latitude, longitude, rent, rooms, room_pricing, gender_preference, food_available, wifi, ac, attached_bathroom, laundry, parking, images, is_featured, rating, total_reviews) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       pg
     );
   }

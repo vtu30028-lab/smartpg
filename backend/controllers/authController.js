@@ -103,6 +103,21 @@ exports.getProfile = async (req, res) => {
   }
 };
 
+exports.updateProfile = async (req, res) => {
+  try {
+    const { avatar } = req.body;
+    
+    if (avatar !== undefined) {
+      await db.query('UPDATE users SET avatar = ? WHERE id = ?', [avatar, req.user.id]);
+    }
+    
+    res.json({ message: 'Profile updated successfully' });
+  } catch (error) {
+    console.error('Update profile error:', error.message);
+    res.status(500).json({ message: 'Could not update profile.' });
+  }
+};
+
 exports.getAllUsers = async (req, res) => {
   try {
     const [users] = await db.query(

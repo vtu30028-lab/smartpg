@@ -133,7 +133,10 @@ export default function StudentDashboard() {
                             {booking.pg_name}
                           </Link>
                           <p className="text-sm text-gray-500">{booking.location}</p>
-                          <p className="text-sm mt-1">₹{booking.total_amount?.toLocaleString()} • {booking.duration_months} mo</p>
+                          <p className="text-sm mt-1">
+                            {booking.room_type && <span className="capitalize">{booking.room_type} Room • </span>}
+                            ₹{booking.total_amount?.toLocaleString()} • {booking.duration_months} mo
+                          </p>
                         </div>
                         <span className={`flex items-center gap-1 text-xs font-medium capitalize ${config.color}`}>
                           <StatusIcon size={14} /> {booking.status}

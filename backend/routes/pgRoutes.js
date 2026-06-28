@@ -2,6 +2,16 @@ const express = require('express');
 const router = express.Router();
 const pgController = require('../controllers/pgController');
 const { authMiddleware, requireRole } = require('../middleware/authMiddleware');
+const upload = require('../middleware/upload');
+
+router.post('/upload', authMiddleware, requireRole('owner', 'admin'), upload.single('image'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded' });
+  }
+  // Construct URL for frontend
+  const imageUrl = `/uploads/${req.file.filename}`;
+  res.status(201).json({ url: imageUrl });
+});
 
 router.get('/pgs', pgController.getAllPGs);
 router.get('/pgs/:id', pgController.getPGById);

@@ -27,13 +27,15 @@ export default function Booking() {
     api.get<PG>(`/pgs/${pgId}`)
       .then(({ data }) => {
         setPg(data);
-        setForm((f) => ({ ...f, room_type: data.room_type }));
+        const defaultRoomType = data.room_pricing ? Object.keys(data.room_pricing)[0] : 'single';
+        setForm((f) => ({ ...f, room_type: defaultRoomType }));
       })
       .catch(() => navigate('/search'))
       .finally(() => setLoading(false));
-  }, [pgId, user, navigate]);
+  }, [pgId, navigate]);
 
-  const totalAmount = pg ? pg.rent * form.duration_months : 0;
+  const rentAmount = pg?.room_pricing?.[form.room_type] || pg?.rent || 0;
+  const totalAmount = rentAmount * form.duration_months;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,12 +81,13 @@ export default function Booking() {
             <select
               value={form.room_type}
               onChange={(e) => setForm({ ...form, room_type: e.target.value })}
-              className="input-field"
+              className="input-field capitalize"
             >
-              <option value="single">Single</option>
-              <option value="double">Double</option>
-              <option value="triple">Triple</option>
-              <option value="shared">Shared</option>
+              {pg.room_pricing && Object.keys(pg.room_pricing).length > 0 ? Object.keys(pg.room_pricing).map((type) => (
+                <option key={type} value={type}>{type} (₹{pg.room_pricing[type].toLocaleString()}/mo)</option>
+              )) : (
+                <option value="single">Single (₹{pg.rent?.toLocaleString() || 0}/mo)</option>
+              )}
             </select>
           </div>
 
@@ -119,7 +122,7 @@ export default function Booking() {
           <div className="p-4 rounded-xl bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800">
             <div className="flex justify-between text-sm mb-1">
               <span>Rent × {form.duration_months} month(s)</span>
-              <span>₹{pg.rent.toLocaleString()} × {form.duration_months}</span>
+              <span>₹{rentAmount.toLocaleString()} × {form.duration_months}</span>
             </div>
             <div className="flex justify-between font-bold text-lg pt-2 border-t border-primary-200 dark:border-primary-800">
               <span>Total</span>

@@ -11,6 +11,7 @@ const parseJsonField = (field) => {
 
 const formatPG = (pg) => ({
   ...pg,
+  room_pricing: parseJsonField(pg.room_pricing) || {},
   images: parseJsonField(pg.images) || [],
   amenities: parseJsonField(pg.amenities) || [],
   food_available: Boolean(pg.food_available),
@@ -45,12 +46,16 @@ exports.getAllPGs = async (req, res) => {
     if (wifi === 'true') { query += ' AND p.wifi = TRUE'; }
     if (ac === 'true') { query += ' AND p.ac = TRUE'; }
     if (bathroom === 'true') { query += ' AND p.attached_bathroom = TRUE'; }
-    if (roomType) { query += ' AND p.room_type = ?'; params.push(roomType); }
+    if (roomType) { query += ' AND JSON_EXTRACT(p.room_pricing, CONCAT("$.", ?)) IS NOT NULL'; params.push(roomType); }
     if (gender) { query += ' AND (p.gender_preference = ? OR p.gender_preference = "any")'; params.push(gender); }
     if (search) {
-      query += ' AND (p.name LIKE ? OR p.location LIKE ? OR p.description LIKE ?)';
-      const term = `%${search}%`;
-      params.push(term, term, term);
+      query += ` AND (
+        p.name LIKE ? OR p.name LIKE ? OR 
+        p.location LIKE ? OR p.location LIKE ?
+      )`;
+      const startsWith = `${search}%`;
+      const wordInside = `% ${search}%`;
+      params.push(startsWith, wordInside, startsWith, wordInside);
     }
     if (featured === 'true') { query += ' AND p.is_featured = TRUE'; }
     if (ownerId) { query += ' AND p.owner_id = ?'; params.push(ownerId); }
@@ -113,25 +118,28 @@ exports.getPGById = async (req, res) => {
 exports.createPG = async (req, res) => {
   const {
     name, description, location, address, latitude, longitude,
-    rent, rooms, room_type, gender_preference,
+    rooms, room_pricing, gender_preference,
     food_available, wifi, ac, attached_bathroom, laundry, parking,
     images, amenities,
   } = req.body;
 
-  if (!name || !location || !rent) {
-    return res.status(400).json({ message: 'Name, location and rent are required.' });
+  if (!name || !location || !room_pricing) {
+    return res.status(400).json({ message: 'Name, location and room pricing are required.' });
   }
+
+  const prices = Object.values(room_pricing).map(Number).filter(n => !isNaN(n));
+  const rent = prices.length > 0 ? Math.min(...prices) : 0;
 
   try {
     const [result] = await db.query(
       `INSERT INTO pgs (owner_id, name, description, location, address, latitude, longitude,
-        rent, rooms, room_type, gender_preference, food_available, wifi, ac,
+        rent, rooms, room_pricing, gender_preference, food_available, wifi, ac,
         attached_bathroom, laundry, parking, images, amenities)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         req.user.id, name, description, location, address,
         latitude || null, longitude || null,
-        rent, rooms || 1, room_type || 'single', gender_preference || 'any',
+        rent, rooms || 1, JSON.stringify(room_pricing || {}), gender_preference || 'any',
         food_available || false, wifi || false, ac || false,
         attached_bathroom || false, laundry || false, parking || false,
         JSON.stringify(images || []), JSON.stringify(amenities || []),
@@ -140,7 +148,7 @@ exports.createPG = async (req, res) => {
 
     res.status(201).json({ message: 'PG created successfully.', id: result.insertId });
   } catch (error) {
-    console.error('Create PG error (demo mode):', error.message);
+    console.error('Create PG error (demo mode) Details:', error);
     const newId = Math.max(...showcasePGs.map((p) => p.id), 0) + 1;
     showcasePGs.unshift({
       id: newId,
@@ -153,7 +161,7 @@ exports.createPG = async (req, res) => {
       longitude: longitude || null,
       rent: Number(rent),
       rooms: rooms || 1,
-      room_type: room_type || 'single',
+      room_pricing: room_pricing || {},
       gender_preference: gender_preference || 'any',
       food_available: !!food_available,
       wifi: !!wifi,
@@ -187,7 +195,7 @@ exports.updatePG = async (req, res) => {
 
     const fields = [
       'name', 'description', 'location', 'address', 'latitude', 'longitude',
-      'rent', 'rooms', 'room_type', 'gender_preference',
+      'rooms', 'room_pricing', 'gender_preference',
       'food_available', 'wifi', 'ac', 'attached_bathroom', 'laundry', 'parking',
       'images', 'amenities', 'is_featured', 'is_active',
     ];
@@ -198,11 +206,18 @@ exports.updatePG = async (req, res) => {
     for (const field of fields) {
       if (req.body[field] !== undefined) {
         updates.push(`${field} = ?`);
-        const val = ['images', 'amenities'].includes(field)
+        const val = ['images', 'amenities', 'room_pricing'].includes(field)
           ? JSON.stringify(req.body[field])
           : req.body[field];
         values.push(val);
       }
+    }
+
+    if (req.body.room_pricing !== undefined) {
+      const prices = Object.values(req.body.room_pricing).map(Number).filter(n => !isNaN(n));
+      const rent = prices.length > 0 ? Math.min(...prices) : 0;
+      updates.push(`rent = ?`);
+      values.push(rent);
     }
 
     if (updates.length === 0) {
@@ -295,6 +310,15 @@ exports.aiSearch = async (req, res) => {
     }
 
     const filters = parseAIQuery(query);
+    
+    if (filters.isGreeting) {
+      return res.json({
+        summary: "Hello! I'm your AI PG Assistant. Tell me what you're looking for, e.g., 'Find a boys PG under 8000 in Koramangala with food'.",
+        filters: {},
+        results: []
+      });
+    }
+
     let sql = `
       SELECT p.*, u.name as owner_name FROM pgs p
       JOIN users u ON p.owner_id = u.id WHERE p.is_active = TRUE
@@ -308,7 +332,7 @@ exports.aiSearch = async (req, res) => {
     if (filters.ac) { sql += ' AND p.ac = TRUE'; }
     if (filters.bathroom) { sql += ' AND p.attached_bathroom = TRUE'; }
     if (filters.gender) { sql += ' AND (p.gender_preference = ? OR p.gender_preference = "any")'; params.push(filters.gender); }
-    if (filters.roomType) { sql += ' AND p.room_type = ?'; params.push(filters.roomType); }
+    if (filters.roomType) { sql += ' AND JSON_EXTRACT(p.room_pricing, CONCAT("$.", ?)) IS NOT NULL'; params.push(filters.roomType); }
     if (filters.location) {
       sql += ' AND (p.location LIKE ? OR p.address LIKE ?)';
       params.push(`%${filters.location}%`, `%${filters.location}%`);
@@ -336,6 +360,15 @@ exports.aiSearch = async (req, res) => {
   } catch (error) {
     console.error('AI search error (using showcase data):', error.message);
     const filters = parseAIQuery(req.body.query);
+    
+    if (filters.isGreeting) {
+      return res.json({
+        summary: "Hello! I'm your AI PG Assistant. Tell me what you're looking for, e.g., 'Find a boys PG under 8000 in Koramangala with food'.",
+        filters: {},
+        results: []
+      });
+    }
+
     const queryParams = { ...filters };
     if (filters.maxRent) queryParams.maxRent = filters.maxRent;
     if (filters.minRent) queryParams.minRent = filters.minRent;
@@ -367,6 +400,11 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
 function parseAIQuery(query) {
   const q = query.toLowerCase();
   const filters = {};
+
+  if (/^(hi|hello|hey|help|who are you|what can you do)[\s\W]*$/.test(q)) {
+    filters.isGreeting = true;
+    return filters;
+  }
 
   const rentMatch = q.match(/under\s*(?:rs\.?\s*)?(\d+)|below\s*(\d+)|max\s*(\d+)|budget\s*(\d+)/);
   if (rentMatch) {
@@ -415,6 +453,8 @@ function generateAISummary(query, filters, results) {
 
   if (applied.length > 0) {
     parts.push(`I filtered for: ${applied.join(', ')}.`);
+  } else {
+    parts.push(`I searched all nearby PGs for you. (Tip: Try adding specifics like 'under 8000' or 'with food'!)`);
   }
 
   if (results.length === 0) {
@@ -422,7 +462,7 @@ function generateAISummary(query, filters, results) {
   } else {
     parts.push(`Found ${results.length} matching PG${results.length > 1 ? 's' : ''}.`);
     const top = results[0];
-    parts.push(`Top pick: **${top.name}** at ₹${top.rent}/month${top.distance ? ` (${top.distance} km away)` : ''}.`);
+    parts.push(`Top pick: **${top.name}** at ₹${top.rent}/month${top.distance != null ? ` (${top.distance} km away)` : ''}.`);
   }
 
   return parts.join(' ');

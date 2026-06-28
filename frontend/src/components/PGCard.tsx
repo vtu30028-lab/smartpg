@@ -55,10 +55,11 @@ export default function PGCard({ pg, index = 0 }: PGCardProps) {
         <div className="p-4">
           <div className="flex items-center justify-between mb-3">
             <div>
+              <span className="text-gray-500 text-sm mr-1">Starts from</span>
               <span className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-                ₹{pg.rent.toLocaleString()}
+                ₹{pg.rent?.toLocaleString()}
               </span>
-              <span className="text-gray-500 text-sm">/month</span>
+              <span className="text-gray-500 text-sm">/mo</span>
             </div>
             <div className="flex items-center gap-1 text-yellow-500">
               <Star size={16} fill="currentColor" />
@@ -90,9 +91,11 @@ export default function PGCard({ pg, index = 0 }: PGCardProps) {
                 <Bath size={10} className="mr-1" /> Bath
               </span>
             )}
-            <span className="badge bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 capitalize">
-              {pg.room_type}
-            </span>
+            {pg.room_pricing && Object.keys(pg.room_pricing).map((type) => (
+              <span key={type} className="badge bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 capitalize">
+                {type}
+              </span>
+            ))}
           </div>
         </div>
       </Link>

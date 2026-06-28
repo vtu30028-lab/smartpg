@@ -18,6 +18,7 @@ export default function PGDetails() {
   const [loading, setLoading] = useState(true);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
   const [reviewLoading, setReviewLoading] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const user = getCurrentUser();
 
   useEffect(() => {
@@ -56,7 +57,15 @@ export default function PGDetails() {
 
   if (!pg) return null;
 
-  const image = pg.images?.[0] || 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800';
+  const fallbackImages = [
+    'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
+    'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800',
+    'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800',
+    'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800',
+    'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800'
+  ];
+  const fallbackImage = fallbackImages[(pg.id || 0) % fallbackImages.length];
+  const image = (!imgError && pg.images && pg.images.length > 0 && pg.images[0]) ? pg.images[0] : fallbackImage;
   const amenities = [
     { key: 'food_available', label: 'Food', icon: Utensils },
     { key: 'wifi', label: 'WiFi', icon: Wifi },
@@ -75,7 +84,12 @@ export default function PGDetails() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card !p-0 overflow-hidden">
-            <img src={image} alt={pg.name} className="w-full h-64 sm:h-80 object-cover" />
+            <img 
+              src={image} 
+              alt={pg.name} 
+              onError={() => setImgError(true)}
+              className="w-full h-64 sm:h-80 object-cover" 
+            />
           </motion.div>
 
           <div className="glass-card">
@@ -88,7 +102,8 @@ export default function PGDetails() {
               </div>
               <div className="text-right">
                 <p className="text-3xl font-bold text-primary-600 dark:text-primary-400">
-                  ₹{pg.rent.toLocaleString()}
+                  <span className="text-lg font-normal text-gray-500 mr-1">Starts from</span>
+                  ₹{pg.rent?.toLocaleString()}
                   <span className="text-sm font-normal text-gray-500">/mo</span>
                 </p>
                 <div className="flex items-center gap-1 justify-end text-yellow-500 mt-1">
@@ -121,10 +136,19 @@ export default function PGDetails() {
               })}
             </div>
 
+            <div className="mb-6">
+              <h2 className="font-semibold text-lg mb-3">Pricing & Room Types</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {pg.room_pricing && Object.entries(pg.room_pricing).map(([type, price]) => (
+                  <div key={type} className="flex justify-between items-center p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
+                    <span className="capitalize font-medium">{type} Sharing</span>
+                    <span className="font-bold text-primary-600 dark:text-primary-400">₹{price.toLocaleString()}/mo</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="flex flex-wrap gap-2 text-sm">
-              <span className="badge bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 capitalize">
-                {pg.room_type} room
-              </span>
               <span className="badge bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 capitalize">
                 {pg.gender_preference === 'any' ? 'All genders' : `${pg.gender_preference} only`}
               </span>

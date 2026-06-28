@@ -19,7 +19,7 @@ export interface PG {
   longitude?: number;
   rent: number;
   rooms: number;
-  room_type: 'single' | 'double' | 'triple' | 'shared';
+  room_pricing: Record<string, number>;
   gender_preference: 'male' | 'female' | 'any';
   food_available: boolean;
   wifi: boolean;
