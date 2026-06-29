@@ -46,7 +46,7 @@ exports.getAllPGs = async (req, res) => {
     if (wifi === 'true') { query += ' AND p.wifi = TRUE'; }
     if (ac === 'true') { query += ' AND p.ac = TRUE'; }
     if (bathroom === 'true') { query += ' AND p.attached_bathroom = TRUE'; }
-    if (roomType) { query += ' AND JSON_EXTRACT(p.room_pricing, CONCAT("$.", ?)) IS NOT NULL'; params.push(roomType); }
+    if (roomType) { query += ' AND p.room_pricing->>? IS NOT NULL'; params.push(roomType); }
     if (gender) { query += ' AND (p.gender_preference = ? OR p.gender_preference = "any")'; params.push(gender); }
     if (search) {
       query += ` AND (
@@ -276,8 +276,8 @@ exports.addReview = async (req, res) => {
 
   try {
     await db.query(
-      'INSERT INTO reviews (user_id, pg_id, rating, comment) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE rating = ?, comment = ?',
-      [req.user.id, pg_id, rating, comment, rating, comment]
+      'INSERT INTO reviews (user_id, pg_id, rating, comment) VALUES (?, ?, ?, ?) ON CONFLICT (user_id, pg_id) DO UPDATE SET rating = EXCLUDED.rating, comment = EXCLUDED.comment',
+      [req.user.id, pg_id, rating, comment]
     );
 
     const [stats] = await db.query(
@@ -332,7 +332,7 @@ exports.aiSearch = async (req, res) => {
     if (filters.ac) { sql += ' AND p.ac = TRUE'; }
     if (filters.bathroom) { sql += ' AND p.attached_bathroom = TRUE'; }
     if (filters.gender) { sql += ' AND (p.gender_preference = ? OR p.gender_preference = "any")'; params.push(filters.gender); }
-    if (filters.roomType) { sql += ' AND JSON_EXTRACT(p.room_pricing, CONCAT("$.", ?)) IS NOT NULL'; params.push(filters.roomType); }
+    if (filters.roomType) { sql += ' AND p.room_pricing->>? IS NOT NULL'; params.push(filters.roomType); }
     if (filters.location) {
       sql += ' AND (p.location LIKE ? OR p.address LIKE ?)';
       params.push(`%${filters.location}%`, `%${filters.location}%`);
