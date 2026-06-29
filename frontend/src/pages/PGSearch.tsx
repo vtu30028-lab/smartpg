@@ -45,8 +45,9 @@ export default function PGSearch() {
       // Remove duplicates from the backend if any exist
       const uniqueData = data?.filter((v, i, a) => a.findIndex(t => (t.name === v.name)) === i) || [];
       
-      setPgs(uniqueData.length > 0 ? uniqueData : getAllFallbackPGs());
+      setPgs(uniqueData);
     } catch {
+      // Only use fallback data if the API is completely down/throws an error
       setPgs(getAllFallbackPGs());
     } finally {
       setLoading(false);
