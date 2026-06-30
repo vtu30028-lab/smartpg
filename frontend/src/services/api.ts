@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://smartpg-gyvw.onrender.com/api',
+  baseURL: import.meta.env.VITE_API_URL || 'https://smartpg-jwn5.onrender.com/api',
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true
 });
