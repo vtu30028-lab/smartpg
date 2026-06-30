@@ -52,15 +52,11 @@ exports.createPayment = async (req, res) => {
   } catch (error) {
     console.error('Create payment error (demo mode):', error.message);
 
-    let razorpayOrderId = `order_${crypto.randomBytes(8).toString('hex')}`;
     if (isRazorpayConfigured()) {
-      try {
-        const order = await createRazorpayOrder(amount, `demo_${Date.now()}`);
-        if (order) razorpayOrderId = order.id;
-      } catch (rzpErr) {
-        console.error('Razorpay order error:', rzpErr.message);
-      }
+      return res.status(400).json({ message: 'Razorpay configuration is incorrect or payment failed: ' + error.message });
     }
+
+    let razorpayOrderId = `order_${crypto.randomBytes(8).toString('hex')}`;
 
     const payment = createDemoPayment(req.user, { amount, booking_id, pg_id, payment_type });
     res.status(201).json({

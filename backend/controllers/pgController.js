@@ -47,11 +47,11 @@ exports.getAllPGs = async (req, res) => {
     if (ac === 'true') { query += ' AND p.ac = TRUE'; }
     if (bathroom === 'true') { query += ' AND p.attached_bathroom = TRUE'; }
     if (roomType) { query += ' AND p.room_pricing->>? IS NOT NULL'; params.push(roomType); }
-    if (gender) { query += ' AND (p.gender_preference = ? OR p.gender_preference = "any")'; params.push(gender); }
+    if (gender) { query += ' AND (p.gender_preference = ? OR p.gender_preference = \'any\')'; params.push(gender); }
     if (search) {
       query += ` AND (
-        p.name LIKE ? OR p.name LIKE ? OR 
-        p.location LIKE ? OR p.location LIKE ?
+        p.name ILIKE ? OR p.name ILIKE ? OR 
+        p.location ILIKE ? OR p.location ILIKE ?
       )`;
       const startsWith = `${search}%`;
       const wordInside = `% ${search}%`;
@@ -331,10 +331,10 @@ exports.aiSearch = async (req, res) => {
     if (filters.wifi) { sql += ' AND p.wifi = TRUE'; }
     if (filters.ac) { sql += ' AND p.ac = TRUE'; }
     if (filters.bathroom) { sql += ' AND p.attached_bathroom = TRUE'; }
-    if (filters.gender) { sql += ' AND (p.gender_preference = ? OR p.gender_preference = "any")'; params.push(filters.gender); }
+    if (filters.gender) { sql += ' AND (p.gender_preference = ? OR p.gender_preference = \'any\')'; params.push(filters.gender); }
     if (filters.roomType) { sql += ' AND p.room_pricing->>? IS NOT NULL'; params.push(filters.roomType); }
     if (filters.location) {
-      sql += ' AND (p.location LIKE ? OR p.address LIKE ?)';
+      sql += ' AND (p.location ILIKE ? OR p.address ILIKE ?)';
       params.push(`%${filters.location}%`, `%${filters.location}%`);
     }
 

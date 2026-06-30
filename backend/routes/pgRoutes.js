@@ -9,7 +9,8 @@ router.post('/upload', authMiddleware, requireRole('owner', 'admin'), upload.sin
     return res.status(400).json({ message: 'No file uploaded' });
   }
   // Construct URL for frontend
-  const imageUrl = `/uploads/${req.file.filename}`;
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const imageUrl = `${baseUrl}/uploads/${req.file.filename}`;
   res.status(201).json({ url: imageUrl });
 });
 
