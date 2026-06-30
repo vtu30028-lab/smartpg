@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+const envUrl = import.meta.env.VITE_API_URL;
+const baseURL = envUrl 
+  ? (envUrl.endsWith('/api') ? envUrl : `${envUrl.replace(/\/$/, '')}/api`) 
+  : 'https://smartpg-jwn5.onrender.com/api';
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://smartpg-jwn5.onrender.com/api',
+  baseURL,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true
 });
