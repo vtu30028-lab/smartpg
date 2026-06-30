@@ -51,7 +51,7 @@ export const getCurrentLocation = (): Promise<Coordinates> =>
           accuracy: position.coords.accuracy,
         }),
       (error) => reject(error),
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
     );
   });
 
@@ -70,7 +70,7 @@ export const watchLocation = (
         accuracy: position.coords.accuracy,
       }),
     (error) => onError?.(error),
-    { enableHighAccuracy: true, timeout: 20000, maximumAge: 5000 }
+    { enableHighAccuracy: false, timeout: 20000, maximumAge: 5000 }
   );
 
   return () => navigator.geolocation.clearWatch(watchId);
