@@ -51,7 +51,7 @@ export const getCurrentLocation = (): Promise<Coordinates> =>
           accuracy: position.coords.accuracy,
         }),
       (error) => reject(error),
-      { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
+      { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
     );
   });
 
@@ -70,7 +70,7 @@ export const watchLocation = (
         accuracy: position.coords.accuracy,
       }),
     (error) => onError?.(error),
-    { enableHighAccuracy: false, timeout: 20000, maximumAge: 5000 }
+    { enableHighAccuracy: false, timeout: 10000, maximumAge: 5000 }
   );
 
   return () => navigator.geolocation.clearWatch(watchId);
@@ -81,7 +81,7 @@ export const reverseGeocode = async (lat: number, lng: number): Promise<string> 
     try {
       await loadGoogleMapsScript();
       const geocoder = new google.maps.Geocoder();
-      return new Promise((resolve, reject) => {
+      return await new Promise((resolve, reject) => {
         geocoder.geocode({ location: { lat, lng } }, (results, status) => {
           if (status === 'OK' && results?.[0]) {
             resolve(results[0].formatted_address.split(',').slice(0, 2).join(',').trim());
